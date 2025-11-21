@@ -1,22 +1,7 @@
-from typing import Optional
+from typing import Optional, Any
 
 from bson import ObjectId
-from pydantic import BaseModel, Field
-
-
-class PyObjectId(ObjectId):
-    @classmethod
-    def __get_validators__(cls):
-        yield cls.validate
-
-    @classmethod
-    def validate(cls, v):
-        if isinstance(v, ObjectId):
-            return v
-        try:
-            return ObjectId(str(v))
-        except Exception as exc:
-            raise ValueError("Invalid ObjectId") from exc
+from pydantic import BaseModel, Field, ConfigDict, field_serializer
 
 
 class HunterBase(BaseModel):
@@ -32,9 +17,17 @@ class HunterCreate(HunterBase):
 
 
 class HunterResponse(HunterBase):
-    id: PyObjectId = Field(..., alias="_id")
+    id: str = Field(..., alias="_id")
 
-    class Config:
-        populate_by_name = True
-        json_encoders = {ObjectId: str}
+    @field_serializer('id')
+    def serialize_id(self, value: Any) -> str:
+        """Convierte ObjectId a string para la serialización JSON"""
+        if isinstance(value, ObjectId):
+            return str(value)
+        return str(value)
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True,
+    )
 

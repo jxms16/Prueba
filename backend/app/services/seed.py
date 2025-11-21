@@ -1,9 +1,9 @@
 from app.db.client import get_hunters_collection
 
 
-def seed_hunters():
+def seed_hunters(force=False):
     collection = get_hunters_collection()
-    if collection.count_documents({}) > 0:
+    if not force and collection.count_documents({}) > 0:
         return
 
     hunters = [
@@ -93,6 +93,10 @@ def seed_hunters():
         },
     ]
 
+    if force:
+        collection.delete_many({})
+        print("🗑️ Cazadores anteriores eliminados")
+    
     collection.insert_many(hunters)
     print("✅ Hunters iniciales insertados")
 

@@ -25,7 +25,9 @@ def create_app() -> FastAPI:
             "https://front-hxh-production.up.railway.app",
             "https://caballeros-del-zodiaco-production-efa5.up.railway.app",
             "http://localhost:5173",
+            "http://localhost:5174",
             "http://localhost:3000",
+            "http://localhost:8000",
         ],
         allow_credentials=True,
         allow_methods=["*"],
@@ -33,6 +35,18 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(hunters_router)
+
+    @app.get("/")
+    def root():
+        return {
+            "message": "Hunter x Hunter API",
+            "version": settings.app_version,
+            "docs": settings.docs_url,
+            "endpoints": {
+                "hunters": "/api-hxh/hunters",
+                "docs": "/api-hxh/docs",
+            }
+        }
 
     @app.on_event("startup")
     def startup_event():
