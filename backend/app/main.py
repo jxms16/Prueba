@@ -34,6 +34,18 @@ def create_app() -> FastAPI:
 
     app.include_router(hunters_router)
 
+    @app.get("/")
+    def root():
+        return {
+            "message": "Hunter x Hunter API",
+            "version": settings.app_version,
+            "docs": settings.docs_url,
+            "endpoints": {
+                "hunters": "/api-hxh/hunters",
+                "docs": "/api-hxh/docs",
+            }
+        }
+
     @app.on_event("startup")
     def startup_event():
         seed_hunters()

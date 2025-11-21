@@ -3,6 +3,10 @@ import axios from 'axios';
 
 const API_BASE = import.meta.env.VITE_HXH_API_URL || 'http://localhost:8000/api-hxh';
 
+// Log para debugging - mostrar qué URL está usando
+console.log('🔧 API_BASE configurada:', API_BASE);
+console.log('🔧 VITE_HXH_API_URL:', import.meta.env.VITE_HXH_API_URL);
+
 // Helper para asegurar que siempre sea un array
 const ensureArray = (value) => {
   if (Array.isArray(value)) return value;
@@ -34,8 +38,10 @@ export default function App() {
   const fetchHunters = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE}/hunters`);
-      console.log('Response from backend:', response.data);
+      const url = `${API_BASE}/hunters`;
+      console.log('🌐 Fetching hunters from:', url);
+      const response = await axios.get(url);
+      console.log('✅ Response from backend:', response.data);
       console.log('Response type:', typeof response.data);
       console.log('Is array?', Array.isArray(response.data));
       
@@ -56,9 +62,17 @@ export default function App() {
       setHunters(ensureArray(huntersList));
       setError(null);
     } catch (err) {
-      console.error('Error fetching hunters:', err);
-      console.error('Response:', err.response?.data);
-      setError('No se pudieron cargar los cazadores. Verifica el backend.');
+      console.error('❌ Error fetching hunters:', err);
+      console.error('Response status:', err.response?.status);
+      console.error('Response data:', err.response?.data);
+      console.error('Request URL:', err.config?.url);
+      
+      // Detectar si recibimos HTML en lugar de JSON
+      if (err.response?.data && typeof err.response.data === 'string' && err.response.data.includes('<!doctype html>')) {
+        setError(`Error: El frontend está recibiendo HTML en lugar de JSON. Verifica que VITE_HXH_API_URL esté configurada correctamente en Railway. URL actual: ${API_BASE}`);
+      } else {
+        setError(`No se pudieron cargar los cazadores. Verifica el backend. URL: ${API_BASE}/hunters`);
+      }
       setHunters([]); // Asegurar que hunters sea siempre un array
     } finally {
       setLoading(false);
@@ -68,7 +82,9 @@ export default function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${API_BASE}/hunters`, {
+      const url = `${API_BASE}/hunters`;
+      console.log('🌐 Creating hunter at:', url);
+      await axios.post(url, {
         ...form,
         edad: form.edad ? Number(form.edad) : undefined,
       });
@@ -82,7 +98,16 @@ export default function App() {
       setShowForm(false);
       fetchHunters();
     } catch (err) {
-      alert(err.response?.data?.detail || 'Error al crear cazador');
+      console.error('❌ Error creating hunter:', err);
+      console.error('Response status:', err.response?.status);
+      console.error('Response data:', err.response?.data);
+      
+      // Detectar si recibimos HTML en lugar de JSON
+      if (err.response?.data && typeof err.response.data === 'string' && err.response.data.includes('<!doctype html>')) {
+        alert(`Error: El frontend está recibiendo HTML en lugar de JSON. Verifica que VITE_HXH_API_URL esté configurada correctamente en Railway. URL actual: ${API_BASE}`);
+      } else {
+        alert(err.response?.data?.detail || 'Error al crear cazador');
+      }
     }
   };
 
