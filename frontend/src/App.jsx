@@ -3,10 +3,21 @@ import axios from 'axios';
 
 const API_BASE = import.meta.env.VITE_HXH_API_URL || 'http://localhost:8000/api-hxh';
 
+// Helper para asegurar que siempre sea un array
+const ensureArray = (value) => {
+  if (Array.isArray(value)) return value;
+  if (value && Array.isArray(value.data)) return value.data;
+  if (value && Array.isArray(value.hunters)) return value.hunters;
+  return [];
+};
+
 export default function App() {
   const [hunters, setHunters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Obtener hunters como array seguro
+  const safeHunters = ensureArray(hunters);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     nombre: '',
@@ -23,12 +34,32 @@ export default function App() {
   const fetchHunters = async () => {
     try {
       setLoading(true);
-      const { data } = await axios.get(`${API_BASE}/hunters`);
-      setHunters(data);
+      const response = await axios.get(`${API_BASE}/hunters`);
+      console.log('Response from backend:', response.data);
+      console.log('Response type:', typeof response.data);
+      console.log('Is array?', Array.isArray(response.data));
+      
+      // Asegurar que data sea siempre un array
+      let huntersList = [];
+      if (Array.isArray(response.data)) {
+        huntersList = response.data;
+      } else if (response.data && Array.isArray(response.data.data)) {
+        // Si viene envuelto en un objeto { data: [...] }
+        huntersList = response.data.data;
+      } else if (response.data && Array.isArray(response.data.hunters)) {
+        // Si viene envuelto en un objeto { hunters: [...] }
+        huntersList = response.data.hunters;
+      }
+      
+      console.log('Final hunters list:', huntersList);
+      // Asegurar que siempre sea un array antes de establecerlo
+      setHunters(ensureArray(huntersList));
       setError(null);
     } catch (err) {
-      console.error(err);
+      console.error('Error fetching hunters:', err);
+      console.error('Response:', err.response?.data);
       setError('No se pudieron cargar los cazadores. Verifica el backend.');
+      setHunters([]); // Asegurar que hunters sea siempre un array
     } finally {
       setLoading(false);
     }
@@ -138,25 +169,26 @@ export default function App() {
 
       <section className="stats">
         <div className="stat-card">
-          <span className="stat-number">{hunters.length}</span>
+          <span className="stat-number">{safeHunters.length}</span>
           <span className="stat-label">Cazadores activos</span>
         </div>
         <div className="stat-card">
           <span className="stat-number">
-            {[...new Set(hunters.map((h) => h.nen_tipo).filter(Boolean))].length}
+            {[...new Set(safeHunters.map((h) => h.nen_tipo).filter(Boolean))].length}
           </span>
           <span className="stat-label">Tipos de Nen</span>
         </div>
         <div className="stat-card">
           <span className="stat-number">
-            {[...new Set(hunters.map((h) => h.afiliacion).filter(Boolean))].length}
+            {[...new Set(safeHunters.map((h) => h.afiliacion).filter(Boolean))].length}
           </span>
           <span className="stat-label">Afiliaciones</span>
         </div>
       </section>
 
       <section className="grid">
-        {hunters.map((hunter) => (
+        {safeHunters.length > 0 ? (
+          safeHunters.map((hunter) => (
           <article key={hunter._id} className="card hunter-card">
             <div className="avatar">
               <img
@@ -179,7 +211,12 @@ export default function App() {
               </button>
             </div>
           </article>
-        ))}
+        ))
+        ) : (
+          <div className="card">
+            <p>No hay cazadores registrados aún.</p>
+          </div>
+        )}
       </section>
     </div>
   );

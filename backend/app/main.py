@@ -18,9 +18,15 @@ def create_app() -> FastAPI:
         contact={"name": "Hunter API Support", "email": "support@hunterxhunter.com"},
     )
 
+    # Configurar CORS para permitir el frontend
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.allowed_origins,
+        allow_origins=[
+            "https://front-hxh-production.up.railway.app",
+            "https://caballeros-del-zodiaco-production-efa5.up.railway.app",
+            "http://localhost:5173",
+            "http://localhost:3000",
+        ],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
